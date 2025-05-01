@@ -641,7 +641,7 @@ const app = createApp({
                 // Camada 1 - Muy baja consanguinidad
                 {
                     id: 'litter1',
-                    identifier: 'A del Colin Canine',
+                    identifier: 'A de Casa Vivalco',
                     birthDate: '2023-06-15',
                     sire: {
                         id: 'dog_g4_m2',
@@ -657,28 +657,28 @@ const app = createApp({
                     puppies: [
                         {
                             id: 'pup1',
-                            name: 'Athos del Colin Canine',
+                            name: 'Athos de Casa Vivalco',
                             gender: 'M',
                             status: 'sold',
                             description: 'Cachorro dominante. Alta presa y buena estructura.'
                         },
                         {
                             id: 'pup2',
-                            name: 'Ares del Colin Canine',
+                            name: 'Ares de Casa Vivalco',
                             gender: 'M',
                             status: 'available',
                             description: 'Equilibrado y sociable. Potencial para deporte.'
                         },
                         {
                             id: 'pup3',
-                            name: 'Artemisa del Colin Canine',
+                            name: 'Artemisa de Casa Vivalco',
                             gender: 'F',
                             status: 'reserved',
                             description: 'Cachorra con gran impulso de presa y agilidad.'
                         },
                         {
                             id: 'pup4',
-                            name: 'Atenea del Colin Canine',
+                            name: 'Atenea de Casa Vivalco',
                             gender: 'F',
                             status: 'sold',
                             description: 'Cachorra con excelente estructura y temperamento.'
@@ -689,7 +689,7 @@ const app = createApp({
                 // Camada 2 - Consanguinidad media
                 {
                     id: 'litter2',
-                    identifier: 'B del Colin Canine',
+                    identifier: 'B de Casa Vivalco',
                     birthDate: '2023-09-22',
                     sire: {
                         id: 'dog_g5_m1',
@@ -705,21 +705,21 @@ const app = createApp({
                     puppies: [
                         {
                             id: 'pup5',
-                            name: 'Braco del Colin Canine',
+                            name: 'Braco de Casa Vivalco',
                             gender: 'M',
                             status: 'sold',
                             description: 'Cachorro con buena estructura y alta presa.'
                         },
                         {
                             id: 'pup6',
-                            name: 'Bruma del Colin Canine',
+                            name: 'Bruma de Casa Vivalco',
                             gender: 'F',
                             status: 'reserved',
                             description: 'Cachorra equilibrada con buen potencial para deporte.'
                         },
                         {
                             id: 'pup7',
-                            name: 'Baco del Colin Canine',
+                            name: 'Baco de Casa Vivalco',
                             gender: 'M',
                             status: 'available',
                             description: 'Cachorro con alto drive y temperamento estable.'
@@ -730,7 +730,7 @@ const app = createApp({
                 // Camada 3 - Alta consanguinidad
                 {
                     id: 'litter3',
-                    identifier: 'C del Colin Canine',
+                    identifier: 'C de Casa Vivalco',
                     birthDate: '2022-12-10',
                     sire: {
                         id: 'dog_g5_m2',
@@ -746,35 +746,35 @@ const app = createApp({
                     puppies: [
                         {
                             id: 'pup8',
-                            name: 'Ciro del Colin Canine',
+                            name: 'Ciro de Casa Vivalco',
                             gender: 'M',
                             status: 'sold',
                             description: 'Cachorro con buen temperamento pero tamaño menor al estándar.'
                         },
                         {
                             id: 'pup9',
-                            name: 'Cora del Colin Canine',
+                            name: 'Cora de Casa Vivalco',
                             gender: 'F',
                             status: 'sold',
                             description: 'Cachorra con buen drive y estructura correcta.'
                         },
                         {
                             id: 'pup10',
-                            name: 'Cesar del Colin Canine',
+                            name: 'Cesar de Casa Vivalco',
                             gender: 'M',
                             status: 'sold',
                             description: 'Cachorro con estructura excelente pero temperamento menos estable.'
                         },
                         {
                             id: 'pup11',
-                            name: 'Cloe del Colin Canine',
+                            name: 'Cloe de Casa Vivalco',
                             gender: 'F',
                             status: 'sold',
                             description: 'Cachorra con buen potencial para deporte.'
                         },
                         {
                             id: 'pup12',
-                            name: 'Caos del Colin Canine',
+                            name: 'Caos de Casa Vivalco',
                             gender: 'M',
                             status: 'sold',
                             description: 'Cachorro con problemas de salud menores pero buen temperamento.'
@@ -785,7 +785,7 @@ const app = createApp({
                 // Camada 4 - Muy baja consanguinidad, líneas distantes
                 {
                     id: 'litter4',
-                    identifier: 'D del Colin Canine',
+                    identifier: 'D de Casa Vivalco',
                     birthDate: '2024-02-15',
                     sire: {
                         id: 'dog_g3_m2',
@@ -801,42 +801,42 @@ const app = createApp({
                     puppies: [
                         {
                             id: 'pup13',
-                            name: 'Duna del Colin Canine',
+                            name: 'Duna de Casa Vivalco',
                             gender: 'F',
                             status: 'available',
                             description: 'Cachorra con excelente morfología y temperamento equilibrado.'
                         },
                         {
                             id: 'pup14',
-                            name: 'Darko del Colin Canine',
+                            name: 'Darko de Casa Vivalco',
                             gender: 'M',
                             status: 'available',
                             description: 'Cachorro con alta presa y excelente impulso de trabajo.'
                         },
                         {
                             id: 'pup15',
-                            name: 'Diana del Colin Canine',
+                            name: 'Diana de Casa Vivalco',
                             gender: 'F',
                             status: 'reserved',
                             description: 'Cachorra con gran agilidad y muy sociable.'
                         },
                         {
                             id: 'pup16',
-                            name: 'Dante del Colin Canine',
+                            name: 'Dante de Casa Vivalco',
                             gender: 'M',
                             status: 'available',
                             description: 'Cachorro con estructura robusta y temperamento estable.'
                         },
                         {
                             id: 'pup17',
-                            name: 'Diva del Colin Canine',
+                            name: 'Diva de Casa Vivalco',
                             gender: 'F',
                             status: 'reserved',
                             description: 'Cachorra con gran potencial para trabajo y deporte.'
                         },
                         {
                             id: 'pup18',
-                            name: 'Duke del Colin Canine',
+                            name: 'Duke de Casa Vivalco',
                             gender: 'M',
                             status: 'reserved',
                             description: 'Cachorro con excelente carácter y estructura.'
@@ -847,7 +847,7 @@ const app = createApp({
                 // Camada 5 - Media consanguinidad (medio hermanos)
                 {
                     id: 'litter5',
-                    identifier: 'E del Colin Canine',
+                    identifier: 'E de Casa Vivalco',
                     birthDate: '2023-04-05',
                     sire: {
                         id: 'dog_g4_m1',
@@ -863,28 +863,28 @@ const app = createApp({
                     puppies: [
                         {
                             id: 'pup19',
-                            name: 'Eros del Colin Canine',
+                            name: 'Eros de Casa Vivalco',
                             gender: 'M',
                             status: 'sold',
                             description: 'Cachorro con excelente estructura y temperamento estable.'
                         },
                         {
                             id: 'pup20',
-                            name: 'Ebano del Colin Canine',
+                            name: 'Ebano de Casa Vivalco',
                             gender: 'M',
                             status: 'sold',
                             description: 'Cachorro con gran potencial para trabajo policial.'
                         },
                         {
                             id: 'pup21',
-                            name: 'Eva del Colin Canine',
+                            name: 'Eva de Casa Vivalco',
                             gender: 'F',
                             status: 'sold',
                             description: 'Cachorra con carácter equilibrado y buena morfología.'
                         },
                         {
                             id: 'pup22',
-                            name: 'Elektra del Colin Canine',
+                            name: 'Elektra de Casa Vivalco',
                             gender: 'F',
                             status: 'sold',
                             description: 'Cachorra con excelente drive y agresión controlada.'
@@ -895,7 +895,7 @@ const app = createApp({
                 // Camada 6 - Planeada para el futuro
                 {
                     id: 'litter6',
-                    identifier: 'F del Colin Canine',
+                    identifier: 'F de Casa Vivalco',
                     birthDate: '2024-06-20', // Fecha futura
                     sire: {
                         id: 'dog_g5_m3',
@@ -1368,7 +1368,7 @@ const app = createApp({
             // Generar identificador de camada
             const litterCount = litters.value.length;
             const nextLetter = String.fromCharCode(65 + (litterCount % 26)); // A, B, C, ...
-            const identifier = `${nextLetter} del Colin Canine`;
+            const identifier = `${nextLetter} de Casa Vivalco`;
             
             // Crear la nueva camada
             const newLitter = {
