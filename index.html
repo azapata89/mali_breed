@@ -1,0 +1,1034 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MaliBreed Pro | Gestión de Criadero de Malinois</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            DEFAULT: '#166534',
+                            light: '#10B981',
+                        },
+                        secondary: {
+                            DEFAULT: '#A16207',
+                            light: '#FEF3C7',
+                        },
+                        neutral: '#F9FAFB',
+                        text: '#1F2937',
+                    }
+                },
+                fontFamily: {
+                    'sans': ['Inter', 'sans-serif'],
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts - Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.3.0/css/all.min.css">
+    
+    <!-- Vue.js 3 -->
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    
+    <!-- Estilos personalizados -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #1F2937;
+            background-color: #F9FAFB;
+        }
+        
+        .fade-enter-active, .fade-leave-active {
+            transition: opacity 0.3s ease;
+        }
+        
+        .fade-enter-from, .fade-leave-to {
+            opacity: 0;
+        }
+        
+        /* Toast notifications */
+        .toast {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 999;
+            transition: transform 0.5s ease, opacity 0.5s ease;
+            transform: translateY(100px);
+            opacity: 0;
+        }
+        
+        .toast.show {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        /* Dropdown menu animation */
+        .dropdown-menu {
+            transform-origin: top;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        
+        /* Loading spinner */
+        .spinner {
+            border: 3px solid rgba(0, 0, 0, 0.1);
+            border-radius: 50%;
+            border-top: 3px solid #166534;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="bg-primary text-white py-4 shadow-md">
+            <div class="container mx-auto px-4 flex justify-between items-center">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-paw text-2xl"></i>
+                    <h1 class="text-xl md:text-2xl font-bold">MaliBreed Pro</h1>
+                </div>
+                <div class="text-sm md:text-base">
+                    <span>{{ stats.totalDogs }} perros | {{ stats.totalLitters }} camadas</span>
+                </div>
+            </div>
+        </header>
+        
+        <!-- Main Navigation -->
+        <nav class="bg-white shadow-sm">
+            <div class="container mx-auto px-4">
+                <ul class="flex overflow-x-auto whitespace-nowrap md:whitespace-normal">
+                    <li v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id" 
+                        class="px-4 py-3 cursor-pointer transition duration-200 border-b-2"
+                        :class="activeTab === tab.id ? 'border-primary text-primary font-medium' : 'border-transparent hover:text-primary'">
+                        <i :class="tab.icon + ' mr-2'"></i>
+                        <span>{{ tab.name }}</span>
+                    </li>
+                </ul>
+            </div>
+        </nav>
+        
+        <!-- Main Content Area -->
+        <main class="flex-grow container mx-auto px-4 py-6">
+            <!-- Dashboard -->
+            <div v-if="activeTab === 'dashboard'" class="space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Stat Cards -->
+                    <div v-for="(stat, index) in dashboardStats" :key="index" 
+                         class="bg-white rounded-lg shadow p-4 flex items-center space-x-4">
+                        <div class="w-12 h-12 rounded-full flex items-center justify-center"
+                             :class="stat.bgColor">
+                            <i :class="stat.icon + ' text-white text-xl'"></i>
+                        </div>
+                        <div>
+                            <div class="text-sm text-gray-500">{{ stat.label }}</div>
+                            <div class="text-xl font-semibold">{{ stat.value }}</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Gender Distribution -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h2 class="text-lg font-semibold mb-4">Distribución por Género</h2>
+                    <div class="flex h-7 rounded overflow-hidden">
+                        <div class="bg-blue-500 h-full" 
+                             :style="`width: ${genderDistribution.malePercentage}%`"></div>
+                        <div class="bg-pink-500 h-full" 
+                             :style="`width: ${genderDistribution.femalePercentage}%`"></div>
+                    </div>
+                    <div class="flex justify-between mt-2 text-sm">
+                        <div><i class="fas fa-mars text-blue-500 mr-1"></i> Machos: {{ genderDistribution.males }}</div>
+                        <div><i class="fas fa-venus text-pink-500 mr-1"></i> Hembras: {{ genderDistribution.females }}</div>
+                    </div>
+                </div>
+                
+                <!-- Top Breeders -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <h2 class="text-lg font-semibold mb-4">Reproductores Destacados</h2>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead>
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Género</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Camadas</th>
+                                    <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cachorros</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr v-for="breeder in topBreeders" :key="breeder.id" class="hover:bg-gray-50">
+                                    <td class="px-4 py-2 whitespace-nowrap">{{ breeder.name }}</td>
+                                    <td class="px-4 py-2 whitespace-nowrap">
+                                        <i :class="breeder.gender === 'M' ? 'fas fa-mars text-blue-500' : 'fas fa-venus text-pink-500'"></i>
+                                        {{ breeder.gender === 'M' ? 'Macho' : 'Hembra' }}
+                                    </td>
+                                    <td class="px-4 py-2 whitespace-nowrap">{{ breeder.litterCount }}</td>
+                                    <td class="px-4 py-2 whitespace-nowrap">{{ breeder.puppyCount }}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Dogs Management -->
+            <div v-if="activeTab === 'dogs'" class="space-y-6">
+                <!-- Search and Filters -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0 md:space-x-4">
+                        <div class="flex-grow md:max-w-md">
+                            <label class="text-gray-700 text-sm font-medium mb-1 block">Buscar</label>
+                            <div class="relative">
+                                <input v-model="dogFilters.search" type="text" 
+                                       class="w-full pl-10 pr-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                       placeholder="Nombre o registro...">
+                                <div class="absolute left-3 top-1/2 transform -translate-y-1/2">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+                            <div>
+                                <label class="text-gray-700 text-sm font-medium mb-1 block">Género</label>
+                                <select v-model="dogFilters.gender" 
+                                        class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <option value="">Todos</option>
+                                    <option value="M">Macho</option>
+                                    <option value="F">Hembra</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-gray-700 text-sm font-medium mb-1 block">Edad</label>
+                                <select v-model="dogFilters.ageGroup" 
+                                        class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <option value="">Todas</option>
+                                    <option value="puppy">Cachorro (< 1 año)</option>
+                                    <option value="young">Joven (1-3 años)</option>
+                                    <option value="adult">Adulto (4-7 años)</option>
+                                    <option value="senior">Senior (8+ años)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-gray-700 text-sm font-medium mb-1 block">Títulos</label>
+                                <select v-model="dogFilters.title" 
+                                        class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <option value="">Todos</option>
+                                    <option value="IGP">IGP</option>
+                                    <option value="IPO">IPO</option>
+                                    <option value="MONDIORING">Mondioring</option>
+                                    <option value="SHOW">Exposición</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Dog List -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <div v-for="dog in filteredDogs" :key="dog.id" 
+                         class="bg-white rounded-lg shadow overflow-hidden border border-gray-100 hover:shadow-md transition duration-200"
+                         @click="showDogDetails(dog)">
+                        <div class="h-40 bg-gray-200 relative">
+                            <img v-if="dog.image" :src="dog.image" :alt="dog.name" class="w-full h-full object-cover">
+                            <div v-else class="w-full h-full flex items-center justify-center bg-primary bg-opacity-10">
+                                <i class="fas fa-dog text-4xl text-primary"></i>
+                            </div>
+                            <div class="absolute top-2 right-2 flex space-x-1">
+                                <span v-if="dog.gender === 'M'" class="bg-blue-500 text-white text-xs px-2 py-1 rounded-full">
+                                    <i class="fas fa-mars mr-1"></i> Macho
+                                </span>
+                                <span v-else class="bg-pink-500 text-white text-xs px-2 py-1 rounded-full">
+                                    <i class="fas fa-venus mr-1"></i> Hembra
+                                </span>
+                                <span v-if="isBreeder(dog)" class="bg-purple-500 text-white text-xs px-2 py-1 rounded-full">
+                                    <i class="fas fa-award mr-1"></i> Reproductor
+                                </span>
+                            </div>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-semibold text-lg">{{ dog.name }}</h3>
+                            <p class="text-sm text-gray-600 mt-1">{{ calculateAge(dog.birthDate) }}</p>
+                            <div class="mt-2 flex flex-wrap gap-1">
+                                <span v-for="title in dog.titles" :key="title" 
+                                      class="bg-secondary-light text-secondary text-xs px-2 py-1 rounded">
+                                    {{ title }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Add New Dog Button -->
+                <button @click="showAddDogModal = true" 
+                        class="fixed bottom-6 right-6 bg-primary hover:bg-primary-light text-white rounded-full p-4 shadow-lg transition duration-200">
+                    <i class="fas fa-plus"></i>
+                </button>
+            </div>
+            
+            <!-- Mating Analysis -->
+            <div v-if="activeTab === 'mating'" class="space-y-6">
+                <!-- Dog Selection -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Sire Selection -->
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <div class="field">
+                            <label>Seleccionar Macho (Padre)</label>
+                            <input 
+                              type="text" 
+                              v-model="matingSearch.sire" 
+                              @input="searchSires"
+                              placeholder="Buscar macho por nombre..."
+                            />
+                          </div>
+                          <div v-if="sireSearchResults.length > 0" class="mt-2 max-h-60 overflow-y-auto border rounded-lg">
+                            <div v-for="dog in sireSearchResults" :key="dog.id" 
+                                 @click="selectSire(dog)"
+                                 class="p-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0">
+                              <div class="flex items-center">
+                                <i class="fas fa-mars text-blue-500 mr-2"></i>
+                                <div>
+                                  <div class="font-medium">{{ dog.name }}</div>
+                                  <div class="text-xs text-gray-500">{{ calculateAge(dog.birthDate) }}</div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        <div v-if="selectedSire" class="mt-4 border rounded-lg p-3 bg-blue-50">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center">
+                                    <i class="fas fa-mars text-blue-500 mr-2 text-xl"></i>
+                                    <div>
+                                        <div class="font-semibold">{{ selectedSire.name }}</div>
+                                        <div class="text-sm text-gray-600">{{ calculateAge(selectedSire.birthDate) }}</div>
+                                    </div>
+                                </div>
+                                <button @click="selectedSire = null" class="text-gray-500 hover:text-red-500">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="mt-2 flex flex-wrap gap-1">
+                                <span v-for="title in selectedSire.titles" :key="title" 
+                                      class="bg-secondary-light text-secondary text-xs px-2 py-1 rounded">
+                                    {{ title }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dam Selection -->
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <div class="field">
+                            <label>Seleccionar Hembra (Madre)</label>
+                            <input 
+                              type="text" 
+                              v-model="matingSearch.dam" 
+                              @input="searchDams"
+                              placeholder="Buscar hembra por nombre..."
+                            />
+                          </div>
+                        <div v-if="damSearchResults.length > 0" class="mt-2 max-h-60 overflow-y-auto border rounded-lg">
+                            <div v-for="dog in damSearchResults" :key="dog.id" 
+                                 @click="selectDam(dog)"
+                                 class="p-2 hover:bg-gray-100 cursor-pointer border-b last:border-b-0">
+                                <div class="flex items-center">
+                                    <i class="fas fa-venus text-pink-500 mr-2"></i>
+                                    <div>
+                                        <div class="font-medium">{{ dog.name }}</div>
+                                        <div class="text-xs text-gray-500">{{ calculateAge(dog.birthDate) }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="selectedDam" class="mt-4 border rounded-lg p-3 bg-pink-50">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center">
+                                    <i class="fas fa-venus text-pink-500 mr-2 text-xl"></i>
+                                    <div>
+                                        <div class="font-semibold">{{ selectedDam.name }}</div>
+                                        <div class="text-sm text-gray-600">{{ calculateAge(selectedDam.birthDate) }}</div>
+                                    </div>
+                                </div>
+                                <button @click="selectedDam = null" class="text-gray-500 hover:text-red-500">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                            <div class="mt-2 flex flex-wrap gap-1">
+                                <span v-for="title in selectedDam.titles" :key="title" 
+                                      class="bg-secondary-light text-secondary text-xs px-2 py-1 rounded">
+                                    {{ title }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Analysis Button -->
+                <div class="text-center">
+                    <button @click="analyzeMatching" 
+                            :disabled="!selectedSire || !selectedDam"
+                            :class="(!selectedSire || !selectedDam) ? 'bg-gray-300 cursor-not-allowed' : 'bg-primary hover:bg-primary-light'"
+                            class="py-2 px-6 text-white rounded-lg shadow transition duration-200">
+                        <i class="fas fa-dna mr-2"></i> Analizar Compatibilidad
+                    </button>
+                </div>
+                
+                <!-- Analysis Results -->
+                <div v-if="matingAnalysis" class="space-y-6">
+                    <!-- Coefficient Summary -->
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h2 class="text-lg font-semibold mb-4">Resultados del Análisis</h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="border rounded-lg p-4">
+                                <h3 class="font-medium text-gray-700">Índice de Consanguinidad (IC)</h3>
+                                <div class="mt-2 text-3xl font-bold" :class="getColorClass(matingAnalysis.ic)">
+                                    {{ (matingAnalysis.ic * 100).toFixed(2) }}%
+                                </div>
+                                <p class="mt-1 text-sm text-gray-600">
+                                    {{ getIcDescription(matingAnalysis.ic) }}
+                                </p>
+                            </div>
+                            <div class="border rounded-lg p-4">
+                                <h3 class="font-medium text-gray-700">Coeficiente de Pérdida Ancestral (ALC)</h3>
+                                <div class="mt-2 text-3xl font-bold" :class="getAlcColorClass(matingAnalysis.alc)">
+                                    {{ (matingAnalysis.alc * 100).toFixed(2) }}%
+                                </div>
+                                <p class="mt-1 text-sm text-gray-600">
+                                    {{ getAlcDescription(matingAnalysis.alc) }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Common Ancestors -->
+                    <div v-if="matingAnalysis.commonAncestors.length > 0" class="bg-white rounded-lg shadow p-4">
+                        <h2 class="text-lg font-semibold mb-4">Ancestros Comunes</h2>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead>
+                                    <tr>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Generación (Macho)</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Generación (Hembra)</th>
+                                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contribución</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="bg-white divide-y divide-gray-200">
+                                    <tr v-for="ancestor in matingAnalysis.commonAncestors" :key="ancestor.id" class="hover:bg-gray-50">
+                                        <td class="px-4 py-2 whitespace-nowrap font-medium">{{ ancestor.name }}</td>
+                                        <td class="px-4 py-2 whitespace-nowrap">{{ ancestor.sireGen }}</td>
+                                        <td class="px-4 py-2 whitespace-nowrap">{{ ancestor.damGen }}</td>
+                                        <td class="px-4 py-2 whitespace-nowrap">
+                                            {{ (ancestor.contribution * 100).toFixed(2) }}%
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <!-- Recommendation -->
+                    <div class="bg-white rounded-lg shadow p-4">
+                        <h2 class="text-lg font-semibold mb-4">Recomendación</h2>
+                        <div class="p-4 rounded-lg" :class="matingAnalysis.recommended ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'">
+                            <div class="flex items-start">
+                                <div class="mr-3">
+                                    <i :class="matingAnalysis.recommended ? 'fas fa-check-circle text-green-500' : 'fas fa-exclamation-circle text-red-500'" class="text-2xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-medium" :class="matingAnalysis.recommended ? 'text-green-700' : 'text-red-700'">
+                                        {{ matingAnalysis.recommended ? 'Cruza Recomendada' : 'Cruza No Recomendada' }}
+                                    </h3>
+                                    <p class="mt-1 text-sm">
+                                        {{ matingAnalysis.recommendation }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="matingAnalysis.recommended" class="mt-4 text-center">
+                            <button @click="createLitter" class="bg-primary hover:bg-primary-light text-white py-2 px-6 rounded-lg shadow transition duration-200">
+                                <i class="fas fa-baby mr-2"></i> Registrar Camada
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Litters Management -->
+            <div v-if="activeTab === 'litters'" class="space-y-6">
+                <!-- Litter Filter -->
+                <div class="bg-white rounded-lg shadow p-4">
+                    <div class="flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0 md:space-x-4">
+                        <div class="flex-grow md:max-w-md">
+                            <label class="text-gray-700 text-sm font-medium mb-1 block">Buscar</label>
+                            <div class="relative">
+                                <input v-model="litterFilters.search" type="text" 
+                                       class="w-full pl-10 pr-3 py-2 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                                       placeholder="Buscar camada...">
+                                <div class="absolute left-3 top-1/2 transform -translate-y-1/2">
+                                    <i class="fas fa-search text-gray-400"></i>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <label class="text-gray-700 text-sm font-medium mb-1 block">Año</label>
+                                <select v-model="litterFilters.year" 
+                                        class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <option value="">Todos</option>
+                                    <option v-for="year in availableYears" :key="year" :value="year">{{ year }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="text-gray-700 text-sm font-medium mb-1 block">Estado</label>
+                                <select v-model="litterFilters.status" 
+                                        class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <option value="">Todos</option>
+                                    <option value="active">Activa</option>
+                                    <option value="completed">Completada</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Litter List -->
+                <div class="space-y-4">
+                    <div v-for="litter in filteredLitters" :key="litter.id" class="bg-white rounded-lg shadow overflow-hidden">
+                        <div class="p-4 bg-secondary-light">
+                            <div class="flex justify-between items-center">
+                                <h3 class="font-semibold text-lg">
+                                    Camada {{ litter.identifier }} 
+                                    <span class="text-sm font-normal ml-2">({{ formatDate(litter.birthDate) }})</span>
+                                </h3>
+                                <div>
+                                    <span class="text-xs px-2 py-1 rounded-full" 
+                                          :class="litter.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'">
+                                        {{ litter.status === 'active' ? 'Activa' : 'Completada' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Parents info -->
+                        <div class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4 border-b">
+                            <div class="flex items-center">
+                                <i class="fas fa-mars text-blue-500 mr-3 text-lg"></i>
+                                <div>
+                                    <div class="text-sm text-gray-500">Padre</div>
+                                    <div class="font-medium">{{ litter.sire.name }}</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center">
+                                <i class="fas fa-venus text-pink-500 mr-3 text-lg"></i>
+                                <div>
+                                    <div class="text-sm text-gray-500">Madre</div>
+                                    <div class="font-medium">{{ litter.dam.name }}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Puppies summary -->
+                        <div class="p-4">
+                            <div class="flex justify-between items-center mb-4">
+                                <h4 class="font-medium">Cachorros ({{ litter.puppies.length }})</h4>
+                                <div class="text-sm">
+                                    <span class="mr-3"><i class="fas fa-mars text-blue-500 mr-1"></i> {{ countPuppiesByGender(litter.puppies, 'M') }}</span>
+                                    <span><i class="fas fa-venus text-pink-500 mr-1"></i> {{ countPuppiesByGender(litter.puppies, 'F') }}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Puppy status graph -->
+                            <div class="w-full bg-gray-200 rounded-full h-4 mb-2">
+                                <div class="flex h-full rounded-full overflow-hidden">
+                                    <div class="bg-green-500 h-full" 
+                                         :style="`width: ${calculatePuppyStatusPercentage(litter.puppies, 'available')}%`"></div>
+                                    <div class="bg-yellow-500 h-full" 
+                                         :style="`width: ${calculatePuppyStatusPercentage(litter.puppies, 'reserved')}%`"></div>
+                                    <div class="bg-blue-500 h-full" 
+                                         :style="`width: ${calculatePuppyStatusPercentage(litter.puppies, 'sold')}%`"></div>
+                                </div>
+                            </div>
+                            <div class="flex text-xs justify-between">
+                                <span><span class="inline-block w-3 h-3 bg-green-500 rounded-full mr-1"></span> Disponibles: {{ countPuppiesByStatus(litter.puppies, 'available') }}</span>
+                                <span><span class="inline-block w-3 h-3 bg-yellow-500 rounded-full mr-1"></span> Reservados: {{ countPuppiesByStatus(litter.puppies, 'reserved') }}</span>
+                                <span><span class="inline-block w-3 h-3 bg-blue-500 rounded-full mr-1"></span> Vendidos: {{ countPuppiesByStatus(litter.puppies, 'sold') }}</span>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="mt-4 flex justify-end">
+                                <button @click="showLitterDetails(litter)" class="bg-primary hover:bg-primary-light text-white py-1 px-4 rounded transition duration-200 text-sm">
+                                    <i class="fas fa-eye mr-1"></i> Ver Detalles
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- No litters message -->
+                <div v-if="filteredLitters.length === 0" class="bg-white rounded-lg shadow p-8 text-center">
+                    <i class="fas fa-baby text-gray-300 text-5xl mb-4"></i>
+                    <h3 class="text-xl font-medium text-gray-600 mb-2">No hay camadas registradas</h3>
+                    <p class="text-gray-500 mb-4">Registra la primera camada analizando una cruza en la sección 'Análisis de Cruza'</p>
+                    <button @click="activeTab = 'mating'" class="bg-primary hover:bg-primary-light text-white py-2 px-4 rounded transition duration-200">
+                        <i class="fas fa-dna mr-2"></i> Ir a Análisis
+                    </button>
+                </div>
+            </div>
+        </main>
+        
+        <!-- Add New Dog Modal -->
+        <div v-if="showAddDogModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden" @click.stop>
+                <div class="bg-primary text-white px-6 py-4 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold">Registrar Nuevo Perro</h3>
+                    <button @click="showAddDogModal = false" class="text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6 max-h-[70vh] overflow-y-auto">
+                    <form @submit.prevent="addNewDog" class="space-y-4">
+                        <!-- Basic Information -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-medium mb-1">Nombre <span class="text-red-500">*</span></label>
+                                <input v-model="newDog.name" type="text" required 
+                                       class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-medium mb-1">Número de Registro</label>
+                                <input v-model="newDog.registrationNumber" type="text" 
+                                       class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-medium mb-1">Género <span class="text-red-500">*</span></label>
+                                <select v-model="newDog.gender" required 
+                                        class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <option value="">Seleccionar</option>
+                                    <option value="M">Macho</option>
+                                    <option value="F">Hembra</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-medium mb-1">Fecha de Nacimiento <span class="text-red-500">*</span></label>
+                                <input v-model="newDog.birthDate" type="date" required 
+                                       class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                            </div>
+                        </div>
+                        
+                        <!-- Parents -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-gray-700 text-sm font-medium mb-1">Padre</label>
+                                <select v-model="newDog.sireId" 
+                                        class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <option value="">Desconocido/No registrado</option>
+                                    <option v-for="dog in maleDogs" :key="dog.id" :value="dog.id">{{ dog.name }}</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-gray-700 text-sm font-medium mb-1">Madre</label>
+                                <select v-model="newDog.damId" 
+                                        class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                    <option value="">Desconocida/No registrada</option>
+                                    <option v-for="dog in femaleDogs" :key="dog.id" :value="dog.id">{{ dog.name }}</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <!-- Health -->
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Condiciones de Salud</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div v-for="condition in healthConditions" :key="condition.id" class="flex items-center">
+                                    <input :id="'health-' + condition.id" type="checkbox" :value="condition.name" v-model="newDog.health" 
+                                           class="rounded border-gray-300 text-primary focus:ring-primary">
+                                    <label :for="'health-' + condition.id" class="ml-2 text-sm text-gray-700">{{ condition.name }}</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Titles -->
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Títulos</label>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div v-for="title in availableTitles" :key="title" class="flex items-center">
+                                    <input :id="'title-' + title" type="checkbox" :value="title" v-model="newDog.titles" 
+                                           class="rounded border-gray-300 text-primary focus:ring-primary">
+                                    <label :for="'title-' + title" class="ml-2 text-sm text-gray-700">{{ title }}</label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notes -->
+                        <div>
+                            <label class="block text-gray-700 text-sm font-medium mb-1">Notas Adicionales</label>
+                            <textarea v-model="newDog.notes" rows="3" 
+                                      class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
+                        </div>
+                        
+                        <!-- Submit -->
+                        <div class="flex justify-end mt-6">
+                            <button type="button" @click="showAddDogModal = false" 
+                                    class="bg-gray-200 text-gray-800 py-2 px-4 rounded-lg mr-2">
+                                Cancelar
+                            </button>
+                            <button type="submit" 
+                                    class="bg-primary hover:bg-primary-light text-white py-2 px-4 rounded-lg">
+                                <i class="fas fa-save mr-2"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Dog Details Modal -->
+        <div v-if="showDogDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden" @click.stop>
+                <div class="bg-primary text-white px-6 py-4 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold">Detalles del Perro</h3>
+                    <button @click="showDogDetailsModal = false" class="text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6 max-h-[80vh] overflow-y-auto" v-if="selectedDogDetails">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <!-- Left column: Photo and basic info -->
+                        <div class="md:col-span-1">
+                            <div class="h-60 bg-gray-200 rounded-lg overflow-hidden">
+                                <img v-if="selectedDogDetails.image" :src="selectedDogDetails.image" :alt="selectedDogDetails.name" class="w-full h-full object-cover">
+                                <div v-else class="w-full h-full flex items-center justify-center bg-primary bg-opacity-10">
+                                    <i class="fas fa-dog text-6xl text-primary"></i>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4 space-y-2">
+                                <div class="flex items-center">
+                                    <i class="fas fa-id-card w-6 text-gray-500"></i>
+                                    <span class="ml-2">{{ selectedDogDetails.registrationNumber || 'Sin registro' }}</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i class="fas fa-birthday-cake w-6 text-gray-500"></i>
+                                    <span class="ml-2">{{ formatDate(selectedDogDetails.birthDate) }} ({{ calculateAge(selectedDogDetails.birthDate) }})</span>
+                                </div>
+                                <div class="flex items-center">
+                                    <i :class="selectedDogDetails.gender === 'M' ? 'fas fa-mars w-6 text-blue-500' : 'fas fa-venus w-6 text-pink-500'"></i>
+                                    <span class="ml-2">{{ selectedDogDetails.gender === 'M' ? 'Macho' : 'Hembra' }}</span>
+                                </div>
+                            </div>
+                            
+                            <!-- Titles and health -->
+                            <div class="mt-4">
+                                <h4 class="font-medium text-gray-700 mb-2">Títulos</h4>
+                                <div class="flex flex-wrap gap-1">
+                                    <span v-for="title in selectedDogDetails.titles" :key="title" 
+                                          class="bg-secondary-light text-secondary text-xs px-2 py-1 rounded">
+                                        {{ title }}
+                                    </span>
+                                    <span v-if="selectedDogDetails.titles.length === 0" class="text-sm text-gray-500">Sin títulos registrados</span>
+                                </div>
+                            </div>
+                            
+                            <div class="mt-4">
+                                <h4 class="font-medium text-gray-700 mb-2">Condiciones de Salud</h4>
+                                <div class="flex flex-wrap gap-1">
+                                    <span v-for="condition in selectedDogDetails.health" :key="condition" 
+                                          class="bg-green-100 text-green-800 text-xs px-2 py-1 rounded">
+                                        {{ condition }}
+                                    </span>
+                                    <span v-if="selectedDogDetails.health.length === 0" class="text-sm text-gray-500">No hay condiciones registradas</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Right columns: Details and pedigree -->
+                        <div class="md:col-span-2">
+                            <h2 class="text-2xl font-bold text-gray-800 mb-4">{{ selectedDogDetails.name }}</h2>
+                            
+                            <!-- Parents -->
+                            <div class="mb-6">
+                                <h4 class="font-medium text-gray-700 mb-2">Padres</h4>
+                                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div class="border rounded-lg p-3">
+                                        <div class="text-sm text-gray-500">Padre</div>
+                                        <div v-if="selectedDogDetails.sire" class="font-medium">
+                                            {{ selectedDogDetails.sire.name }}
+                                        </div>
+                                        <div v-else class="italic text-gray-500">Desconocido/No registrado</div>
+                                    </div>
+                                    <div class="border rounded-lg p-3">
+                                        <div class="text-sm text-gray-500">Madre</div>
+                                        <div v-if="selectedDogDetails.dam" class="font-medium">
+                                            {{ selectedDogDetails.dam.name }}
+                                        </div>
+                                        <div v-else class="italic text-gray-500">Desconocida/No registrada</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Pedigree -->
+                            <div class="mb-6">
+                                <h4 class="font-medium text-gray-700 mb-2">Pedigree (3 Generaciones)</h4>
+                                <div class="border rounded-lg p-3 overflow-x-auto">
+                                    <div v-if="pedigreeLoaded" class="pedigree-tree">
+                                        <!-- Pedigree visualization would go here -->
+                                        <div class="flex items-center text-gray-500 justify-center">
+                                            <i class="fas fa-sitemap mr-2"></i>
+                                            El pedigree se visualizará aquí
+                                        </div>
+                                    </div>
+                                    <div v-else class="flex items-center justify-center py-4">
+                                        <div class="spinner"></div>
+                                        <span class="ml-2 text-gray-500">Cargando pedigree...</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Offspring -->
+                            <div v-if="selectedDogDetails.offspring && selectedDogDetails.offspring.length > 0">
+                                <h4 class="font-medium text-gray-700 mb-2">Descendencia</h4>
+                                <div class="border rounded-lg overflow-hidden">
+                                    <table class="min-w-full divide-y divide-gray-200">
+                                        <thead class="bg-gray-50">
+                                            <tr>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Género</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Nacimiento</th>
+                                                <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Otro Progenitor</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="bg-white divide-y divide-gray-200">
+                                            <tr v-for="offspring in selectedDogDetails.offspring" :key="offspring.id" class="hover:bg-gray-50">
+                                                <td class="px-4 py-2 whitespace-nowrap">{{ offspring.name }}</td>
+                                                <td class="px-4 py-2 whitespace-nowrap">
+                                                    <i :class="offspring.gender === 'M' ? 'fas fa-mars text-blue-500' : 'fas fa-venus text-pink-500'" class="mr-1"></i>
+                                                    {{ offspring.gender === 'M' ? 'Macho' : 'Hembra' }}
+                                                </td>
+                                                <td class="px-4 py-2 whitespace-nowrap">{{ formatDate(offspring.birthDate) }}</td>
+                                                <td class="px-4 py-2 whitespace-nowrap">
+                                                    {{ offspring.otherParent ? offspring.otherParent.name : 'Desconocido' }}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+                            <!-- Notes -->
+                            <div class="mt-6">
+                                <h4 class="font-medium text-gray-700 mb-2">Notas</h4>
+                                <div class="border rounded-lg p-3 bg-gray-50">
+                                    <p v-if="selectedDogDetails.notes" class="text-gray-700 whitespace-pre-line">{{ selectedDogDetails.notes }}</p>
+                                    <p v-else class="text-gray-500 italic">Sin notas adicionales</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Litter Details Modal -->
+        <div v-if="showLitterDetailsModal" class="fixed inset-0 bg-black bg-opacity-50 z-40 flex items-center justify-center p-4">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-4xl overflow-hidden" @click.stop>
+                <div class="bg-primary text-white px-6 py-4 flex justify-between items-center">
+                    <h3 class="text-lg font-semibold">Detalles de la Camada</h3>
+                    <button @click="showLitterDetailsModal = false" class="text-white hover:text-gray-200">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="p-6 max-h-[80vh] overflow-y-auto" v-if="selectedLitterDetails">
+                    <div class="mb-6">
+                        <h2 class="text-2xl font-bold text-gray-800">
+                            Camada {{ selectedLitterDetails.identifier }}
+                            <span class="text-base font-normal ml-2 text-gray-600">({{ formatDate(selectedLitterDetails.birthDate) }})</span>
+                        </h2>
+                        
+                        <!-- Parents -->
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="border rounded-lg p-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-mars text-blue-500 mr-3 text-xl"></i>
+                                    <div>
+                                        <div class="text-sm text-gray-500">Padre</div>
+                                        <div class="font-medium">{{ selectedLitterDetails.sire.name }}</div>
+                                        <div class="text-sm text-gray-500">{{ calculateAge(selectedLitterDetails.sire.birthDate) }} al momento del apareamiento</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="border rounded-lg p-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-venus text-pink-500 mr-3 text-xl"></i>
+                                    <div>
+                                        <div class="text-sm text-gray-500">Madre</div>
+                                        <div class="font-medium">{{ selectedLitterDetails.dam.name }}</div>
+                                        <div class="text-sm text-gray-500">{{ calculateAge(selectedLitterDetails.dam.birthDate) }} al momento del apareamiento</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Genetic Analysis -->
+                        <div class="mt-6">
+                            <h3 class="text-lg font-semibold text-gray-800 mb-3">Análisis Genético</h3>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="border rounded-lg p-4">
+                                    <h4 class="font-medium text-gray-700">Índice de Consanguinidad (IC)</h4>
+                                    <div class="mt-2 text-2xl font-bold" :class="getColorClass(selectedLitterDetails.ic)">
+                                        {{ (selectedLitterDetails.ic * 100).toFixed(2) }}%
+                                    </div>
+                                    <p class="mt-1 text-sm text-gray-600">
+                                        {{ getIcDescription(selectedLitterDetails.ic) }}
+                                    </p>
+                                </div>
+                                <div class="border rounded-lg p-4">
+                                    <h4 class="font-medium text-gray-700">Coeficiente de Pérdida Ancestral (ALC)</h4>
+                                    <div class="mt-2 text-2xl font-bold" :class="getAlcColorClass(selectedLitterDetails.alc)">
+                                        {{ (selectedLitterDetails.alc * 100).toFixed(2) }}%
+                                    </div>
+                                    <p class="mt-1 text-sm text-gray-600">
+                                        {{ getAlcDescription(selectedLitterDetails.alc) }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Puppies -->
+                        <div class="mt-6">
+                            <div class="flex justify-between items-center mb-3">
+                                <h3 class="text-lg font-semibold text-gray-800">Cachorros</h3>
+                                <button v-if="selectedLitterDetails.status === 'active'" @click="showAddPuppyForm = !showAddPuppyForm" 
+                                        class="text-sm bg-primary hover:bg-primary-light text-white py-1 px-3 rounded transition duration-200">
+                                    <i class="fas fa-plus mr-1"></i> Añadir Cachorro
+                                </button>
+                            </div>
+                            
+                            <!-- Add puppy form -->
+                            <div v-if="showAddPuppyForm" class="mb-4 border rounded-lg p-4 bg-gray-50">
+                                <h4 class="font-medium text-gray-700 mb-3">Nuevo Cachorro</h4>
+                                <form @submit.prevent="addPuppy" class="space-y-3">
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                                        <div>
+                                            <label class="block text-gray-700 text-sm font-medium mb-1">Nombre <span class="text-red-500">*</span></label>
+                                            <input v-model="newPuppy.name" type="text" required 
+                                                   class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                        </div>
+                                        <div>
+                                            <label class="block text-gray-700 text-sm font-medium mb-1">Género <span class="text-red-500">*</span></label>
+                                            <select v-model="newPuppy.gender" required 
+                                                    class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                                <option value="">Seleccionar</option>
+                                                <option value="M">Macho</option>
+                                                <option value="F">Hembra</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-gray-700 text-sm font-medium mb-1">Estado <span class="text-red-500">*</span></label>
+                                            <select v-model="newPuppy.status" required 
+                                                    class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent">
+                                                <option value="available">Disponible</option>
+                                                <option value="reserved">Reservado</option>
+                                                <option value="sold">Vendido</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-700 text-sm font-medium mb-1">Descripción</label>
+                                        <textarea v-model="newPuppy.description" rows="2" 
+                                                  class="w-full py-2 px-3 rounded-lg border focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"></textarea>
+                                    </div>
+                                    <div class="flex justify-end mt-3">
+                                        <button type="button" @click="showAddPuppyForm = false" 
+                                                class="bg-gray-200 text-gray-800 py-1 px-3 rounded-lg mr-2 text-sm">
+                                            Cancelar
+                                        </button>
+                                        <button type="submit" 
+                                                class="bg-primary hover:bg-primary-light text-white py-1 px-3 rounded-lg text-sm">
+                                            <i class="fas fa-save mr-1"></i> Guardar
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <!-- Puppies list -->
+                            <div class="border rounded-lg overflow-hidden">
+                                <table class="min-w-full divide-y divide-gray-200">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Género</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                                            <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descripción</th>
+                                            <th class="px-4 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="bg-white divide-y divide-gray-200">
+                                        <tr v-for="puppy in selectedLitterDetails.puppies" :key="puppy.id" class="hover:bg-gray-50">
+                                            <td class="px-4 py-2">{{ puppy.name }}</td>
+                                            <td class="px-4 py-2">
+                                                <i :class="puppy.gender === 'M' ? 'fas fa-mars text-blue-500' : 'fas fa-venus text-pink-500'" class="mr-1"></i>
+                                                {{ puppy.gender === 'M' ? 'Macho' : 'Hembra' }}
+                                            </td>
+                                            <td class="px-4 py-2">
+                                                <span class="px-2 py-1 text-xs rounded-full" 
+                                                      :class="getPuppyStatusClass(puppy.status)">
+                                                    {{ getPuppyStatusLabel(puppy.status) }}
+                                                </span>
+                                            </td>
+                                            <td class="px-4 py-2">
+                                                {{ puppy.description || '-' }}
+                                            </td>
+                                            <td class="px-4 py-2 text-right">
+                                                <button v-if="selectedLitterDetails.status === 'active'" 
+                                                        @click="updatePuppyStatus(puppy)"
+                                                        class="text-primary hover:text-primary-light mr-2">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <button v-if="puppy.status !== 'sold' && canRegisterAsDog(puppy)"
+                                                        @click="registerPuppyAsDog(puppy)"
+                                                        class="text-secondary hover:text-secondary-900">
+                                                    <i class="fas fa-dog"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Toast Notification -->
+        <div id="toast" class="toast bg-white border-l-4 border-primary shadow-lg rounded-lg p-4 flex items-start">
+            <i :class="toastIcon" class="mr-3 text-lg"></i>
+            <div>
+                <div class="font-medium">{{ toastTitle }}</div>
+                <div class="text-sm text-gray-600">{{ toastMessage }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- App Script -->
+    <script src="app.js"></script>
+</body>
+</html>
